@@ -233,33 +233,33 @@ def generate_metrics_result(res_dict, predict_output, model_idntfr):
     mutate_logger.info(f"Accumulative Inconsistency: {accumulative_incons}")
     return res_dict, accumulative_incons
 
-
+# To make comparison fair: we remove the execution part and simply assume no inconsistency.
 def get_model_prediction(res_dict, model_path, model_name, exp, test_size, backends):
     """
     Get model prediction on different backends and calculate distance by metrics
     """
-    predict_output = {b: [] for b in backends}
+    predict_output = {b: np.ones((1)) for b in backends}
     model_idntfr = model_name[:-3]
     all_backends_predict_status = True
-    for bk in backends:
-        python_bin = f"{python_prefix}/{bk}/bin/python"
-        predict_st = datetime.datetime.now()
-        pre_status_bk = os.system(f"{python_bin} -u -m run.patch_prediction_extractor --backend {bk} "
-                                  f"--exp {exp} --test_size {test_size} --model {model_path} "
-                                  f"--redis_db {lemon_cfg['redis'].getint('redis_db')} --config_name {flags.config_name}")
-        predict_et = datetime.datetime.now()
-        predict_td = predict_et - predict_st
-        h, m, s = utils.ToolUtils.get_HH_mm_ss(predict_td)
-        mutate_logger.info("Prediction Time Used on {} : {}h, {}m, {}s".format(bk, h, m, s))
+    # for bk in backends:
+        # python_bin = f"{python_prefix}/{bk}/bin/python"
+        # predict_st = datetime.datetime.now()
+        # pre_status_bk = os.system(f"{python_bin} -u -m run.patch_prediction_extractor --backend {bk} "
+        #                           f"--exp {exp} --test_size {test_size} --model {model_path} "
+        #                           f"--redis_db {lemon_cfg['redis'].getint('redis_db')} --config_name {flags.config_name}")
+        # predict_et = datetime.datetime.now()
+        # predict_td = predict_et - predict_st
+        # h, m, s = utils.ToolUtils.get_HH_mm_ss(predict_td)
+        # mutate_logger.info("Prediction Time Used on {} : {}h, {}m, {}s".format(bk, h, m, s))
 
-        # If no exception is thrown,save prediction result
-        if pre_status_bk == 0:
-            data = pickle.loads(redis_conn.hget("prediction_{}".format(model_name), bk))
-            predict_output[bk] = data
-        # record the crashed backend
-        else:
-            all_backends_predict_status = False
-            mutate_logger.error("{} crash on backend {} when predicting ".format(model_name, bk))
+        # # If no exception is thrown,save prediction result
+        # if pre_status_bk == 0:
+        #     data = pickle.loads(redis_conn.hget("prediction_{}".format(model_name), bk))
+        #     predict_output[bk] = data
+        # # record the crashed backend
+        # else:
+        #     all_backends_predict_status = False
+        #     mutate_logger.error("{} crash on backend {} when predicting ".format(model_name, bk))
 
     status = False
     accumulative_incons = None
